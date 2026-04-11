@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pdf-Viewer</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0&icon_names=upload_file" />
+    <link rel="stylesheet" href="pdf-viewer.css">
+</head>
+<body>
+    <div class="input-window">
+        <div class="pdf-feature-info">
+            <div class="pdf-logo">
+                <img src="pdf-logo.png" alt="pdf-logo">
+            </div>
+            <h2>PDF Viewer</h2>
+            <ul>
+                <li>Lazy-Rendered</li>
+                <li>Content Pixelated Search</li>
+                <li>Bookmark Pages</li>
+                <li>AI Powered Quiz , Flashcards and Summary</li>
+            </ul>
+        </div>
+        <div class="input-file">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path d="M452-202h60v-201l82 82 42-42-156-152-154 154 42 42 84-84v201ZM220-80q-24 0-42-18t-18-42v-680q0-24 18-42t42-18h361l219 219v521q0 24-18 42t-42 18H220Zm331-554v-186H220v680h520v-494H551ZM220-820v186-186 680-680Z"/></svg>
+            <p>Drag & drop a PDF here or click the button below</p>
+            <input type="file" id="file-input" accept=".pdf" style="display:none">
+            <button class="open-btn">Open PDF</button>
+        </div>
+    </div>
+    <div class="pdf-previewer">
+        <div class="topbar">
+            <button class="prev-page">&lt;</button>
+            <button class="nxt-page">&gt;</button>
+            <div class="page-info">
+                Page <span class="num-page">1</span> of <span class="page-total"></span>
+            </div>
+        </div>
+        <canvas class="pdf-render"></canvas>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="pdf-viewer.js"></script>
+</body>
+</html>
