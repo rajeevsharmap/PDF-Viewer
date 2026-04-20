@@ -33,7 +33,6 @@ canvas.pdf-render{
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 10px;
     min-height: 100vh;
     gap: 24px;
     padding: 24px;
@@ -183,4 +182,14 @@ canvas.pdf-render{
 
 .prev-page:active, .nxt-page:active{
     transform: scale(0.90);
+}
+
+.pdf-previewer.show{
+    display: flex;
+    flex-direction: column;
+    flex: 1 auto;
+}
+
+.input-window.hide{
+    display: none;
 }
