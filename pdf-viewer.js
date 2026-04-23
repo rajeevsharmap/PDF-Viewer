@@ -1,56 +1,121 @@
-let pdfDoc          = null;
-let pageNum         = 1;
+let pdfDoc = null;
+let pageNum = 1;
 let pageIsRendering = false;
-let pageNumPending  = null;
+let pageNumPending = null;
+let target;
+let currentVisiblePage = 1;
 
-const scale  = 1.5;
-const canvas = document.querySelector('.pdf-render');
-const ctx    = canvas.getContext('2d');
+const scale = 1.5;
+const viewerContainer = document.querySelector('.viewerContainer');
+const viewer = document.querySelector('.viewer');
+const pages = [];
 
 //Setting different thread for file render [to avoid UI/UX blockage]
 pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 //initial Page Loader
-function renderPage(num) {
-    pageIsRendering = true;
+async function renderPage(num, container) {
 
-    pdfDoc.getPage(num).then(page => {
-        const viewport = page.getViewport({ scale });
-        canvas.height  = viewport.height;
-        canvas.width   = viewport.width;
+    const page = await pdfDoc.getPage(num);
+    const viewport = page.getViewport({ scale });
 
-        const renderCtx = { canvasContext: ctx, viewport };
+    const canvas = document.createElement('canvas');
+    canvas.classList.add('pdf-render');
+    const ctx = canvas.getContext('2d');
 
-        page.render(renderCtx).promise.then(() => {
-            pageIsRendering = false;
-            if (pageNumPending !== null) {
-                renderPage(pageNumPending);
-                pageNumPending = null;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    container.innerHTML = "";
+    container.appendChild(canvas);
+
+    await page.render({
+        canvasContext: ctx,
+        viewport
+    }).promise;
+}
+
+async function loadPDF(arrayBuffer) {
+    try {
+        pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+        document.querySelector('.page-total').textContent = pdfDoc.numPages;
+        document.querySelector('.input-window').classList.add('hide');
+        document.querySelector('.pdf-previewer').classList.add('show');
+
+        viewer.innerHTML = '';
+        pages.length = 0;
+
+        // ✅ Now await works properly
+        const firstPage = await pdfDoc.getPage(1);
+        const viewport = firstPage.getViewport({ scale });
+
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+            const pageDiv = document.createElement('div');
+            pageDiv.className = 'page';
+            pageDiv.dataset.pageNumber = i;
+
+            pageDiv.style.height = `${viewport.height}px`;
+
+            viewer.appendChild(pageDiv);
+
+            pages.push({
+                pageNumber: i,
+                rendered: false,
+                div: pageDiv
+            });
+        }
+
+        initObserver();
+
+    } catch (err) {
+        console.error('PDF load error:', err);
+        alert('Could not read this PDF.');
+    }
+}
+
+function initObserver() {
+    const observer = new IntersectionObserver(entries => {
+        let maxRatio = 0;
+        for (const entry of entries) {
+            
+            const pageDiv = entry.target;
+            const pageNumber = parseInt(pageDiv.dataset.pageNumber);
+            const pagesObj = pages[pageNumber - 1];
+            if (!pagesObj) return;
+
+            if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+                maxRatio = entry.intersectionRatio;
+                currentVisiblePage = parseInt(entry.target.dataset.pageNumber);
+                document.querySelector('.num-page').textContent = currentVisiblePage;
+                pageNum = currentVisiblePage;
             }
-        });
-
-        document.querySelector('.num-page').textContent = num;
+            
+            if (entry.isIntersecting) {
+                if (!pagesObj.rendered) {
+                    renderPage(pageNumber, pageDiv);
+                    pagesObj.rendered = true;
+                }
+            } else {
+                const buffer = 1;
+                if (Math.abs(pageNumber - currentVisiblePage) > buffer) {
+                    if (pagesObj.rendered) {
+                        pageDiv.innerHTML = '';
+                        pagesObj.rendered = false;
+                    }
+                }
+            }
+        }
+    }, {
+        root: viewerContainer,
+        threshold: 0.01
     });
+
+    pages.forEach(p => observer.observe(p.div));
+
 }
 
-function loadPDF(arrayBuffer) {
-    pageNum = 1;
-    pdfjsLib.getDocument({ data: arrayBuffer }).promise
-        .then(pdfDoc_ => {
-            pdfDoc = pdfDoc_;
-            document.querySelector('.page-total').textContent = pdfDoc.numPages;
-            const inputWindow = document.querySelector('.input-window');
-            const previewer   = document.querySelector('.pdf-previewer');
-            inputWindow.classList.add('hide');
-            previewer.classList.add('show');
-            renderPage(pageNum);
-        })
-        .catch(err => {
-            console.error('PDF load error:', err);
-            alert('Could not read this PDF.');
-        });
-}
 
 //User File input through Local browser Window.
 const fileInput = document.getElementById('file-input');
@@ -58,10 +123,11 @@ document.querySelector('.open-btn').addEventListener('click', () => fileInput.cl
 
 fileInput.addEventListener('change', e => {
     const file = e.target.files[0];
+    console.log(file);
     if (!file) return;
     const reader = new FileReader();
-    reader.addEventListener('load', e => loadPDF(e.target.result));
     reader.readAsArrayBuffer(file);
+    reader.addEventListener('load', e => loadPDF(e.target.result));
 });
 
 //User file input 2.drag and drop 
@@ -94,7 +160,8 @@ document.querySelector('.prev-page').addEventListener('click', showPrevPage);
 function showPrevPage() {
     if (pageNum <= 1) return;
     pageNum--;
-    queueRenderPage(pageNum);
+    target = document.querySelector(`[data-page-number = "${pageNum}"]`);
+    target.scrollIntoView({ behavior: 'smooth' });
 }
 
 //Render Next Page
@@ -103,14 +170,6 @@ document.querySelector('.nxt-page').addEventListener('click', showNxtPage);
 function showNxtPage() {
     if (pageNum >= pdfDoc.numPages) return;
     pageNum++;
-    queueRenderPage(pageNum);
+    target = document.querySelector(`[data-page-number = "${pageNum}"]`);
+    target.scrollIntoView({ behavior: 'smooth' });
 }
-
-//If no page rendering, then render the specific page 
-const queueRenderPage = num => {
-    if (pageIsRendering) {
-        pageNumPending = num;
-    } else {
-        renderPage(num);
-    }
-};
