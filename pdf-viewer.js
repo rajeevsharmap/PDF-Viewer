@@ -1,14 +1,12 @@
 let pdfDoc = null;
 let pageNum = 1;
-let pageIsRendering = false;
-let pageNumPending = null;
-let target;
 let currentVisiblePage = 1;
+let  scale = 1.5;
+let pages = [];
+let target;
 
-const scale = 1.5;
 const viewerContainer = document.querySelector('.viewerContainer');
 const viewer = document.querySelector('.viewer');
-const pages = [];
 
 //Setting different thread for file render [to avoid UI/UX blockage]
 pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -76,7 +74,7 @@ async function loadPDF(arrayBuffer) {
 }
 
 function initObserver() {
-    const observer = new IntersectionObserver(entries => {
+    observer = new IntersectionObserver(entries => {
         let maxRatio = 0;
         for (const entry of entries) {
             
@@ -109,13 +107,12 @@ function initObserver() {
         }
     }, {
         root: viewerContainer,
-        threshold: 0.01
+        threshold: 0.025
     });
 
     pages.forEach(p => observer.observe(p.div));
 
 }
-
 
 //User File input through Local browser Window.
 const fileInput = document.getElementById('file-input');
@@ -173,3 +170,28 @@ function showNxtPage() {
     target = document.querySelector(`[data-page-number = "${pageNum}"]`);
     target.scrollIntoView({ behavior: 'smooth' });
 }
+
+document.querySelector('.toggleBack').addEventListener('click', () => {
+    
+    if (observer) {
+        observer.disconnect();
+        observer = null;
+    }
+
+    document.querySelector('.input-window').classList.remove('hide');
+    document.querySelector('.pdf-previewer').classList.remove('show');
+
+    viewer.innerHTML = '';
+
+    pdfDoc = null;
+    pageNum = 1;
+    currentVisiblePage = 1;
+    target = null;
+    scale = 1.5;
+    pages = [];
+
+    document.querySelector('.num-page').textContent = '';
+    document.querySelector('.page-total').textContent = '';
+
+    fileInput.value = '';
+});

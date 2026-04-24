@@ -141,6 +141,9 @@ body {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    position: sticky;
+    top:0;
+    z-index: 5;
     width: 90%;
     background-color: rgb(5, 34, 59);
     padding: 0.5rem 2rem;
@@ -199,11 +202,15 @@ body {
 }
 
 .viewerContainer {
-    height: 100vh;
+    height: 90vh;
     overflow-y: scroll;
 }
 
 .page {
     position: relative;
     margin: 10px auto;
+}
+
+.toggleBack{
+    cursor: pointer;
 }
