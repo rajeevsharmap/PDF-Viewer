@@ -1,9 +1,10 @@
 let pdfDoc = null;
 let pageNum = 1;
 let currentVisiblePage = 1;
-let  scale = 1.5;
+let  scale = 1;
 let pages = [];
 let target;
+let filename = null;
 
 const viewerContainer = document.querySelector('.viewerContainer');
 const viewer = document.querySelector('.viewer');
@@ -37,7 +38,7 @@ async function renderPage(num, container) {
 async function loadPDF(arrayBuffer) {
     try {
         pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-
+        document.querySelector('.fileName').textContent = filename;
         document.querySelector('.page-total').textContent = pdfDoc.numPages;
         document.querySelector('.input-window').classList.add('hide');
         document.querySelector('.pdf-previewer').classList.add('show');
@@ -47,6 +48,8 @@ async function loadPDF(arrayBuffer) {
 
         // ✅ Now await works properly
         const firstPage = await pdfDoc.getPage(1);
+        const baseViewport = firstPage.getViewport({ scale: 1 });
+        scale = Math.min(800, viewerContainer.clientWidth - 32) / baseViewport.width; // ← computed once
         const viewport = firstPage.getViewport({ scale });
 
         for (let i = 1; i <= pdfDoc.numPages; i++) {
@@ -120,7 +123,7 @@ document.querySelector('.open-btn').addEventListener('click', () => fileInput.cl
 
 fileInput.addEventListener('change', e => {
     const file = e.target.files[0];
-    console.log(file);
+    filename = file.name;
     if (!file) return;
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
@@ -189,6 +192,7 @@ document.querySelector('.toggleBack').addEventListener('click', () => {
     target = null;
     scale = 1.5;
     pages = [];
+    filename = null;
 
     document.querySelector('.num-page').textContent = '';
     document.querySelector('.page-total').textContent = '';
